@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiWed Dashboard — Fasil & Nasila</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0a07;
+  --surface: #16110c;
+  --card: #1e1710;
+  --gold: #c9a05a;
+  --gold-light: #e8c97a;
+  --blush: #f2b5c8;
+  --sky: #a8d4ea;
+  --text: #f0e4d0;
+  --muted: rgba(240,228,208,0.45);
+  --border: rgba(201,160,90,0.18);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text); font-family:'Jost',sans-serif; min-height:100vh; }
+
+/* ── LOCK ── */
+#lock-screen {
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:40px 28px; text-align:center;
+}
+#lock-screen.hidden { display:none; }
+.lock-logo { font-family:'Cinzel',serif; font-size:10px; letter-spacing:5px; color:var(--gold); text-transform:uppercase; margin-bottom:36px; }
+.lock-title { font-family:'Cormorant Garamond',serif; font-size:clamp(28px,8vw,44px); font-weight:400; line-height:1.1; margin-bottom:6px; }
+.lock-title em { font-style:italic; color:var(--gold-light); }
+.lock-sub { font-family:'Cormorant Garamond',serif; font-size:15px; font-style:italic; color:var(--muted); margin-bottom:44px; }
+.lock-field {
+  width:100%; max-width:300px;
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:16px 20px; font-family:'Jost',sans-serif; font-size:15px;
+  color:var(--text); letter-spacing:4px; text-align:center;
+  margin-bottom:14px; outline:none; transition:border-color .3s;
+}
+.lock-field:focus { border-color:rgba(201,160,90,.5); }
+.lock-field::placeholder { letter-spacing:1px; color:rgba(240,228,208,.3); }
+.lock-btn {
+  width:100%; max-width:300px; padding:16px;
+  background:transparent; border:1px solid rgba(201,160,90,.5); border-radius:60px;
+  font-family:'Cinzel',serif; font-size:11px; letter-spacing:4px;
+  color:var(--gold-light); text-transform:uppercase; cursor:pointer;
+  transition:border-color .3s, background .3s;
+}
+.lock-btn:hover { border-color:var(--gold); background:rgba(201,160,90,.08); }
+.lock-error { font-size:12px; color:var(--blush); margin-top:12px; opacity:0; transition:opacity .3s; }
+.lock-error.show { opacity:1; }
+
+/* ── DASHBOARD ── */
+#dashboard { display:none; }
+#dashboard.visible { display:block; }
+
+.dash-header {
+  padding:28px 20px 20px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  position:sticky; top:0; z-index:100;
+}
+.dash-badge { font-family:'Cinzel',serif; font-size:9px; letter-spacing:5px; color:var(--gold); text-transform:uppercase; margin-bottom:5px; }
+.dash-title { font-family:'Cormorant Garamond',serif; font-size:clamp(18px,5vw,28px); font-weight:400; }
+.dash-title em { font-style:italic; color:var(--gold-light); }
+.dash-live { display:inline-flex; align-items:center; gap:6px; font-size:9px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-top:5px; }
+.live-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+
+/* SUMMARY BAR */
+.summary-bar {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--card); border-bottom:1px solid var(--border);
+}
+.summary-cell { padding:14px 6px; text-align:center; border-right:1px solid var(--border); }
+.summary-cell:last-child { border-right:none; }
+.summary-num { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:600; line-height:1; }
+.summary-num.yes  { color:#4ade80; }
+.summary-num.no   { color:#f87171; }
+.summary-num.girl { color:var(--blush); }
+.summary-num.boy  { color:var(--sky); }
+.summary-lbl { font-size:8px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+
+/* POLL BAR */
+.poll-bar-wrap {
+  padding:14px 18px 12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.poll-labels { display:flex; justify-content:space-between; font-size:10px; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
+.poll-labels .g { color:var(--blush); }
+.poll-labels .b { color:var(--sky); }
+.poll-track { height:7px; border-radius:99px; background:rgba(168,212,234,.2); overflow:hidden; position:relative; }
+.poll-fill  { position:absolute; left:0; top:0; height:100%; background:linear-gradient(to right,rgba(242,181,200,.6),var(--blush)); border-radius:99px 0 0 99px; transition:width 1s ease; }
+
+/* CONTENT */
+.content { padding:14px 14px 80px; max-width:520px; margin:0 auto; }
+.section-title { font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; color:var(--gold); text-transform:uppercase; margin:18px 0 10px; }
+
+/* GUEST CARD */
+.guest-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; margin-bottom:9px; overflow:hidden;
+}
+.guest-top { display:flex; align-items:center; gap:10px; padding:13px 15px 8px; }
+.guest-avatar {
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:600; font-family:'Cinzel',serif; flex-shrink:0;
+}
+.guest-avatar.yes { background:rgba(74,222,128,.12); color:#4ade80; border:1px solid rgba(74,222,128,.25); }
+.guest-avatar.no  { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+.guest-name { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; flex:1; }
+
+.chips { display:flex; flex-wrap:wrap; gap:5px; padding:0 15px 11px; }
+.chip { font-size:9px; letter-spacing:1px; padding:3px 9px; border-radius:20px; text-transform:uppercase; }
+.chip.yes    { background:rgba(74,222,128,.12); color:#4ade80; }
+.chip.no     { background:rgba(248,113,113,.12); color:#f87171; }
+.chip.girl   { background:rgba(242,181,200,.15); color:var(--blush); }
+.chip.boy    { background:rgba(168,212,234,.15); color:var(--sky); }
+.chip.novote { background:rgba(255,255,255,.05); color:rgba(240,228,208,.28); }
+.chip.guests { background:rgba(201,160,90,.1); color:var(--gold-light); }
+
+.guest-note {
+  margin:0 15px 13px;
+  padding:10px 13px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(201,160,90,.08);
+  border-radius:10px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:14px; font-style:italic; color:var(--muted); line-height:1.5;
+}
+
+/* WISH CARD */
+.wish-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:9px; }
+.wish-who { font-family:'Cormorant Garamond',serif; font-size:15px; font-weight:600; color:var(--gold-light); margin-bottom:5px; }
+.wish-msg { font-family:'Cormorant Garamond',serif; font-size:13px; font-style:italic; color:var(--muted); line-height:1.55; }
+
+/* GENERATOR */
+.generator-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:18px 16px; margin-bottom:9px;
+}
+.gen-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.gen-input-row { margin-bottom:12px; }
+.gen-input {
+  width:100%; background:var(--bg);
+  border:1px solid var(--border); border-radius:10px;
+  padding:12px 14px; font-family:'Jost',sans-serif;
+  font-size:14px; color:var(--text); outline:none;
+  transition:border-color .3s;
+}
+.gen-input:focus { border-color:rgba(201,160,90,.5); }
+.gen-input::placeholder { color:rgba(240,228,208,.3); }
+.gen-preview {
+  background:var(--bg); border:1px solid rgba(201,160,90,.12);
+  border-radius:10px; padding:11px 13px; margin-bottom:12px;
+  word-break:break-all;
+}
+.gen-url { font-size:11px; color:rgba(240,228,208,.45); font-family:'Jost',sans-serif; }
+.gen-url.ready { color:var(--gold-light); }
+.gen-actions { display:flex; gap:8px; }
+.gen-btn {
+  flex:1; padding:12px 8px; border-radius:10px;
+  font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px;
+  text-transform:uppercase; cursor:pointer; border:none;
+  text-align:center; text-decoration:none; display:flex;
+  align-items:center; justify-content:center; gap:5px;
+  transition:opacity .2s;
+}
+.gen-btn:hover { opacity:.8; }
+.gen-btn.copy { background:rgba(201,160,90,.15); color:var(--gold-light); border:1px solid rgba(201,160,90,.3); }
+.gen-btn.whatsapp { background:rgba(37,211,102,.12); color:#25d366; border:1px solid rgba(37,211,102,.25); }
+
+.empty-state { padding:28px; text-align:center; color:var(--muted); font-size:13px; font-style:italic; }
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lock-screen">
+  <p class="lock-logo">✦ DigiWed Dashboard ✦</p>
+  <h1 class="lock-title"><em>Fasil</em> & <em>Nasila</em></h1>
+  <p class="lock-sub">Baby Shower & Gender Reveal</p>
+  <input type="password" class="lock-field" id="pass-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlock()">
+  <button class="lock-btn" onclick="unlock()">Open Dashboard</button>
+  <p class="lock-error" id="lock-error">Incorrect password. Try again.</p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <div class="dash-header">
+    <p class="dash-badge">✦ DigiWed Dashboard ✦</p>
+    <h1 class="dash-title"><em>Fasil</em> & <em>Nasila</em></h1>
+    <div class="dash-live"><span class="live-dot"></span> Live</div>
+  </div>
+
+  <div class="summary-bar">
+    <div class="summary-cell"><div class="summary-num yes"  id="s-yes">0</div><div class="summary-lbl">Attending</div></div>
+    <div class="summary-cell"><div class="summary-num no"   id="s-no">0</div><div class="summary-lbl">Not coming</div></div>
+    <div class="summary-cell"><div class="summary-num girl" id="s-girl">0</div><div class="summary-lbl">👧 Girl</div></div>
+    <div class="summary-cell"><div class="summary-num boy"  id="s-boy">0</div><div class="summary-lbl">👦 Boy</div></div>
+  </div>
+
+  <div class="poll-bar-wrap">
+    <div class="poll-labels">
+      <span class="g">👧 Girl — <span id="girl-pct">–</span></span>
+      <span class="b"><span id="boy-pct">–</span> — Boy 👦</span>
+    </div>
+    <div class="poll-track"><div class="poll-fill" id="poll-fill" style="width:50%"></div></div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── LINK GENERATOR ── -->
+    <p class="section-title">Generate Guest Link</p>
+    <div class="generator-card">
+      <p class="gen-label">Guest Name</p>
+      <div class="gen-input-row">
+        <input type="text" id="gen-name" class="gen-input" placeholder="e.g. Ahmad Faris" oninput="generateLink()">
+      </div>
+      <div class="gen-preview" id="gen-preview">
+        <span class="gen-url" id="gen-url">Enter a name above…</span>
+      </div>
+      <div class="gen-actions" id="gen-actions" style="display:none">
+        <button class="gen-btn copy" onclick="copyLink()">
+          <span id="copy-label">📋 Copy Link</span>
+        </button>
+        <a class="gen-btn whatsapp" id="wa-btn" href="#" target="_blank">
+          💬 Send WhatsApp
+        </a>
+      </div>
+    </div>
+    <p class="section-title" id="rsvp-title">Guest Responses</p>
+    <div id="guest-list"><div class="empty-state">No responses yet…</div></div>
+
+    <p class="section-title" id="wishes-title">Wishes</p>
+    <div id="wishes-list"><div class="empty-state">No wishes yet…</div></div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+const PASS = 'digiwed2025';
+
+function unlock() {
+  const val = document.getElementById('pass-input').value;
+  const err = document.getElementById('lock-error');
+  if (val === PASS) {
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('visible');
+    initFirebase();
+  } else {
+    err.classList.add('show');
+    document.getElementById('pass-input').value = '';
+    setTimeout(() => err.classList.remove('show'), 2500);
+  }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function initials(name) {
+  return (name||'?').trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+}
+
+let pollMap   = {};
+let rsvpItems = [];
+let wishItems = [];
+
+function render() {
+  let yes = 0, no = 0, girl = 0, boy = 0;
+  rsvpItems.forEach(r => r.attending ? yes++ : no++);
+  Object.values(pollMap).forEach(v => v === 'girl' ? girl++ : boy++);
+  const total = girl + boy;
+
+  document.getElementById('s-yes').textContent  = yes;
+  document.getElementById('s-no').textContent   = no;
+  document.getElementById('s-girl').textContent = girl;
+  document.getElementById('s-boy').textContent  = boy;
+
+  const gPct = total ? Math.round((girl/total)*100) : 50;
+  document.getElementById('girl-pct').textContent = total ? gPct+'%' : '–';
+  document.getElementById('boy-pct').textContent  = total ? (100-gPct)+'%' : '–';
+  document.getElementById('poll-fill').style.width = gPct + '%';
+
+  // ── Guest list ──
+  document.getElementById('rsvp-title').textContent = `Guest Responses (${rsvpItems.length})`;
+  const gList = document.getElementById('guest-list');
+  if (!rsvpItems.length) {
+    gList.innerHTML = '<div class="empty-state">No responses yet…</div>';
+  } else {
+    gList.innerHTML = '';
+    rsvpItems.forEach(r => {
+      const status = r.attending ? 'yes' : 'no';
+      const statusLbl = r.attending ? 'Attending' : "Can't make it";
+      const vote = pollMap[(r.name||'').toLowerCase().trim()];
+      const voteChip = vote
+        ? `<span class="chip ${vote}">${vote==='girl'?'👧 Girl':'👦 Boy'}</span>`
+        : `<span class="chip novote">No vote</span>`;
+      const guestChip = r.attending && r.guests && r.guests !== '0'
+        ? `<span class="chip guests">+${esc(r.guests)} guests</span>` : '';
+      const noteBlock = r.note && r.note.trim()
+        ? `<div class="guest-note">"${esc(r.note)}"</div>` : '';
+
+      const card = document.createElement('div');
+      card.className = 'guest-card';
+      card.innerHTML = `
+        <div class="guest-top">
+          <div class="guest-avatar ${status}">${esc(initials(r.name))}</div>
+          <div class="guest-name">${esc(r.name)}</div>
+        </div>
+        <div class="chips">
+          <span class="chip ${status}">${statusLbl}</span>
+          ${voteChip}
+          ${guestChip}
+        </div>
+        ${noteBlock}
+      `;
+      gList.appendChild(card);
+    });
+  }
+
+  // ── Wishes ──
+  document.getElementById('wishes-title').textContent = `Wishes (${wishItems.length})`;
+  const wList = document.getElementById('wishes-list');
+  if (!wishItems.length) {
+    wList.innerHTML = '<div class="empty-state">No wishes yet…</div>';
+  } else {
+    wList.innerHTML = '';
+    wishItems.forEach(w => {
+      const card = document.createElement('div');
+      card.className = 'wish-card';
+      card.innerHTML = `<div class="wish-who">${esc(w.name)}</div><div class="wish-msg">"${esc(w.message)}"</div>`;
+      wList.appendChild(card);
+    });
+  }
+}
+
+const BASE_URL = 'https://murshid161-sketch.github.io/Fasil_nasilababyshower/';
+
+function generateLink() {
+  const name = document.getElementById('gen-name').value.trim();
+  const urlEl = document.getElementById('gen-url');
+  const actions = document.getElementById('gen-actions');
+  const waBtn = document.getElementById('wa-btn');
+
+  if (!name) {
+    urlEl.textContent = 'Enter a name above…';
+    urlEl.className = 'gen-url';
+    actions.style.display = 'none';
+    return;
+  }
+
+  const encoded = encodeURIComponent(name);
+  const link = BASE_URL + '?to=' + encoded;
+  urlEl.textContent = link;
+  urlEl.className = 'gen-url ready';
+  actions.style.display = 'flex';
+
+  const waMsg = encodeURIComponent(
+    'Assalamu Alaikum ' + name + ' 🌸\n\nYou are warmly invited to Fasil & Nasila\'s Baby Shower & Gender Reveal!\n\n' + link
+  );
+  waBtn.href = 'https://wa.me/?text=' + waMsg;
+}
+
+function copyLink() {
+  const url = document.getElementById('gen-url').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const lbl = document.getElementById('copy-label');
+    lbl.textContent = '✅ Copied!';
+    setTimeout(() => lbl.textContent = '📋 Copy Link', 2000);
+  });
+}
+
+function initFirebase() {
+  firebase.initializeApp({
+    apiKey: "AIzaSyB41fvxVl1KeHOro6WKJ72o22izuCpJ-b4",
+    authDomain: "yaseen-jumana-wedding.firebaseapp.com",
+    databaseURL: "https://yaseen-jumana-wedding-default-rtdb.firebaseio.com",
+    projectId: "yaseen-jumana-wedding",
+    storageBucket: "yaseen-jumana-wedding.firebasestorage.app",
+  });
+  const db = firebase.database();
+
+  db.ref('/fasil-nasila-poll').on('value', snap => {
+    pollMap = {};
+    Object.values(snap.val()||{}).forEach(v => {
+      if (v.name) pollMap[v.name.toLowerCase().trim()] = v.choice;
+    });
+    render();
+  });
+
+  db.ref('/fasil-nasila-rsvp').on('value', snap => {
+    rsvpItems = Object.values(snap.val()||{}).sort((a,b)=>b.ts-a.ts);
+    render();
+  });
+
+  db.ref('/fasil-nasila-babyshower').on('value', snap => {
+    wishItems = Object.values(snap.val()||{}).sort((a,b)=>b.ts-a.ts);
+    render();
+  });
+}
+</script>
+</body>
+</html>
